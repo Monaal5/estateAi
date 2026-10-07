@@ -113,12 +113,14 @@ async def health():
             s.execute(select(1))
         db = "ok"
     except Exception as e:  # noqa: BLE001
-        db = f"error: {e}"
+        db = f"error: {type(e).__name__}: {e}"
     try:
         _, model = await generate_json('Return {"ok":true}', "health", temperature=0)
         return {"ok": True, "model": model, "database": db}
-    except GeminiError as e:
-        return {"ok": False, "error": str(e), "reason": e.reason, "database": db}
+    except Exception as e:  # noqa: BLE001
+        reason = getattr(e, "reason", type(e).__name__)
+        return {"ok": False, "error": str(e), "reason": reason, "database": db}
+
 
 
 @app.get("/api/deals")

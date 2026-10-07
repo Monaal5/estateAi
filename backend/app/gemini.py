@@ -36,9 +36,12 @@ def _retry_delay(body: dict) -> float:
 
 
 def _log(purpose, model, ok, started, error=None):
-    with SessionLocal() as s:
-        s.add(AiCallLog(purpose=purpose, model=model, ok=ok, latency_ms=int((time.time() - started) * 1000), error=error))
-        s.commit()
+    try:
+        with SessionLocal() as s:
+            s.add(AiCallLog(purpose=purpose, model=model, ok=ok, latency_ms=int((time.time() - started) * 1000), error=error))
+            s.commit()
+    except Exception as e:  # noqa: BLE001
+        print(f"[gemini log error] {purpose}: {e}")
 
 
 async def generate_json(prompt: str, purpose: str, temperature: float = 0.9,
