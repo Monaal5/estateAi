@@ -38,6 +38,20 @@ async def _startup():
 
 
 
+from sqlalchemy.exc import DBAPIError, OperationalError
+
+@app.exception_handler(OperationalError)
+@app.exception_handler(DBAPIError)
+async def _db_err(_req: Request, e: Exception):
+    return JSONResponse(
+        status_code=503,
+        content={
+            "error": "Database connection failed. Please add PostgreSQL database on Render and set DATABASE_URL in Web Service Environment variables.",
+            "reason": "DATABASE_UNAVAILABLE",
+        },
+    )
+
+
 @app.exception_handler(GeminiError)
 async def _gemini_err(_req: Request, e: GeminiError):
     status = e.status if 400 <= e.status < 600 else 502
