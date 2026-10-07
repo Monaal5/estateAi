@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>estate AI – Simple User Guide</title>
+<style>
+@page { size: A4; margin: 16mm 15mm; }
+body { font-family: "Segoe UI", Arial, sans-serif; color:#1e293b; font-size:11.5pt; line-height:1.45; }
+h1 { color:#0b1f3a; font-size:26pt; margin:0; }
+h2 { color:#0b1f3a; font-size:15pt; border-bottom:3px solid #2563eb; padding-bottom:3px; margin:18px 0 8px; }
+h3 { color:#1d4ed8; font-size:12pt; margin:12px 0 3px; }
+.sub { color:#475569; margin:4px 0 14px; }
+.box { background:#eff6ff; border-left:4px solid #2563eb; padding:8px 12px; border-radius:6px; margin:8px 0; }
+.ex { background:#f8fafc; border:1px solid #e2e8f0; padding:7px 11px; border-radius:6px; margin:4px 0 10px; font-size:10.5pt; }
+.ex b { color:#0b1f3a; }
+table { width:100%; border-collapse:collapse; font-size:10.5pt; }
+td, th { border:1px solid #e2e8f0; padding:5px 8px; text-align:left; vertical-align:top; }
+th { background:#0b1f3a; color:#fff; }
+code { background:#e2e8f0; padding:1px 5px; border-radius:4px; }
+.pb { page-break-before: always; }
+ul { margin:4px 0; padding-left:20px; } li { margin:2px 0; }
+</style></head><body>
+
+<h1>estate AI</h1>
+<p class="sub">An AI assistant for commercial property loans — simple guide</p>
+
+<h2>1. What is it?</h2>
+<p>A website that helps a bank check whether a property loan is safe to give.</p>
+<p>AI reads the loan details and documents, finds problems, and writes reports — work that usually takes analysts days.</p>
+<div class="box">Money ratios (DSCR, LTV, Debt Yield) are calculated by fixed maths, not guessed by AI, so numbers are always correct.</div>
+
+<h2>2. Key words (in plain English)</h2>
+<table>
+<tr><th>Word</th><th>Meaning</th></tr>
+<tr><td>NOI</td><td>Yearly profit the property makes after its running costs.</td></tr>
+<tr><td>DSCR</td><td>Profit ÷ yearly loan payments. 1.25x means profit covers payments 1.25 times. Higher = safer.</td></tr>
+<tr><td>LTV</td><td>Loan as % of property value. 70% means a $7M loan on a $10M building. Lower = safer.</td></tr>
+<tr><td>Debt Yield</td><td>Profit as % of the loan. Higher = safer.</td></tr>
+<tr><td>Covenant</td><td>A promise the borrower must keep, e.g. "DSCR must stay above 1.20x".</td></tr>
+<tr><td>Credit Memo</td><td>The final report that tells the bank's committee: approve or decline.</td></tr>
+</table>
+
+<h2>3. How to use it (5 steps)</h2>
+<ul>
+<li><b>Step 1:</b> Open <i>Deal Pipeline</i> to see all loan requests.</li>
+<li><b>Step 2:</b> Click a deal to open it in the <i>Underwriting Workspace</i>.</li>
+<li><b>Step 3:</b> Upload its documents (PDF, scanned PDF or photo) — AI reads them.</li>
+<li><b>Step 4:</b> Ask the Copilot questions and check the risk flags.</li>
+<li><b>Step 5:</b> Open <i>Credit Memorandum</i> to get the final approve/decline report.</li>
+</ul>
+<div class="box">Every page has a <b>Regenerate</b> button — click it to make the AI produce a fresh analysis.</div>
+
+<h2 class="pb">4. Each page — what it does, with an example</h2>
+
+<h3>① Deal Pipeline &amp; Inbox</h3>
+<p>Shows every loan request, its stage, priority and how safe it looks.</p>
+<div class="ex"><b>Example:</b> You see "Harbor View Apartments – $18.5M – DSCR 1.62x – High priority – 1 blocker". Green DSCR means healthy; you click it to work on it.</div>
+
+<h3>② Underwriting Workspace</h3>
+<p>The main working page for one loan: key numbers, AI-extracted facts, conflicts and conditions.</p>
+<div class="ex"><b>Example:</b> It shows "NOI $1.42M (Operating Statement, page 3, 94% confidence)" and warns "Rent roll says 92% occupied, appraisal says 88% — please check".</div>
+
+<h3>③ Loan Documents (PDF / Scans) — inside Underwriting</h3>
+<p>Drop a PDF, scanned PDF or phone photo; AI reads it, pulls out the numbers and compares them to the deal.</p>
+<div class="ex"><b>Example:</b> You upload a scanned T-12 statement. AI reads it (badge "AI OCR"), finds NOI = $1.35M instead of $1.42M, updates the deal, and DSCR is recalculated automatically.</div>
+
+<h3>④ Underwriting Copilot — inside Underwriting</h3>
+<p>A chat box. Ask questions about the deal; AI answers only from the deal's data and shows its sources.</p>
+<div class="ex"><b>Example:</b> You ask "What is the biggest risk?" → "Tenant concentration: one tenant pays 41% of rent." Sources: Rent Roll.</div>
+
+<h3>⑤ Credit Memorandum</h3>
+<p>AI writes the full final report: recommendation, strengths, weaknesses, stress tests and best-fit lenders.</p>
+<div class="ex"><b>Example:</b> "Approve with Conditions". Stress test: "If profit falls 10%, DSCR becomes 1.31x — still passes." Suggested lender: "Regional Bank – 88% fit".</div>
+
+<h3>⑥ Extraction Audit</h3>
+<p>Shows how well the AI reads documents across all deals, and where humans corrected it.</p>
+<div class="ex"><b>Example:</b> "312 fields extracted, 87% auto-accepted. 10:42 – analyst changed property value from $24.0M to $24.5M."</div>
+
+<h3>⑦ Syndication &amp; Term Sheets</h3>
+<p>Shows loan offers sent to lenders and how big loans are shared between several banks.</p>
+<div class="ex"><b>Example:</b> "DL-1042: SOFR + 285, 5 yr, status Negotiating." A $40M loan split: Lead Bank 50%, Bank B 30%, Bank C 20%.</div>
+
+<h3>⑧ Covenant Compliance</h3>
+<p>Watches the promises borrowers made and alerts you when one is close to breaking.</p>
+<div class="ex"><b>Example:</b> "Minimum DSCR 1.20x — actual 1.08x — <b>Breach</b>. Alert: High severity, next test 2026-12-31."</div>
+
+<h2 class="pb">5. What you get</h2>
+<ul>
+<li>Loan files reviewed in minutes instead of days.</li>
+<li>Numbers pulled from documents automatically — even from scans and photos.</li>
+<li>Mismatches between documents caught before they become problems.</li>
+<li>A ready-to-present credit report with a clear recommendation.</li>
+<li>Everything saved in a database, so nothing is lost when you close the browser.</li>
+</ul>
+
+<h2>6. Good to know</h2>
+<ul>
+<li><b>No fake data:</b> if the AI fails, you see a real error and a Retry button — never made-up results.</li>
+<li><b>Safe key:</b> the AI key lives only in the backend, never in the website code.</li>
+<li><b>Limits:</b> files up to 20 MB (scans up to 14 MB). Free AI keys allow only a few requests per minute, so pages may load slowly.</li>
+<li><b>Demo deals:</b> the starting loan list is generated by AI for demonstration; upload real documents to replace numbers.</li>
+</ul>
+
+<h2>7. Quick fixes</h2>
+<table>
+<tr><th>Problem</th><th>Fix</th></tr>
+<tr><td>Top bar shows "AI Engine Offline"</td><td>Check internet and the key in <code>backend/.env</code>, then restart.</td></tr>
+<tr><td>Page says "Deal not found"</td><td>The deal list was regenerated — pick a deal again from the Inbox.</td></tr>
+<tr><td>Error 429 / slow loading</td><td>AI rate limit reached — wait a minute and click Retry.</td></tr>
+<tr><td>Scan not readable</td><td>Upload a clearer, higher-resolution copy.</td></tr>
+</table>
+
+</body></html>

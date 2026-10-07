@@ -1,0 +1,36 @@
+{
+  "name": "estate-ai",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n db,api,web -c yellow,cyan,magenta \"npm:db\" \"npm:server\" \"npm:client\"",
+    "db": "D:\\pgsql\\bin\\postgres.exe -D D:\\pgsql\\data -p 5432",
+    "client": "vite",
+    "server": "backend\\.venv\\Scripts\\python -m uvicorn app.main:app --app-dir backend --port 5000 --reload --reload-dir backend/app",
+    "db:start": "D:\\pgsql\\bin\\pg_ctl.exe -D D:\\pgsql\\data -l D:\\pgsql\\server.log -o \"-p 5432\" start",
+    "db:stop": "D:\\pgsql\\bin\\pg_ctl.exe -D D:\\pgsql\\data stop",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.6",
+    "express": "^5.2.1",
+    "lucide-react": "^0.344.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.61",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.18",
+    "concurrently": "^10.0.5",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4"
+  }
+}
