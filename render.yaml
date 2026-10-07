@@ -17,5 +17,5 @@ services:
 databases:
   - name: estate-ai-db
     databaseName: estate_ai
-    user: postgres
+    user: estate_ai_user
     plan: free
