@@ -388,3 +388,13 @@ def ai_log(limit: int = 50):
     with SessionLocal() as s:
         rows = s.scalars(select(AiCallLog).order_by(AiCallLog.id.desc()).limit(limit)).all()
     return [{"purpose": r.purpose, "model": r.model, "ok": r.ok, "latencyMs": r.latency_ms, "error": r.error, "at": iso(r.created_at)} for r in rows]
+
+
+# ---------------------------------------------------------------- static frontend build (production / Render)
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+
+dist_dir = Path(__file__).resolve().parent.parent.parent / "dist"
+if dist_dir.exists():
+    app.mount("/", StaticFiles(directory=str(dist_dir), html=True), name="static")
+
