@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import delete, select
 
-from .config import POLICY
+from .config import DATABASE_URL, POLICY
 from .db import AiCallLog, ChatMessage, Deal, DealArtifact, PortfolioArtifact, SessionLocal, UploadedDocument, init_db
 from .finance import normalize_deal, underwrite
 from .gemini import GeminiError, generate_json
@@ -18,16 +18,24 @@ app = FastAPI(title="estate AI API", version="2.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
-@app.on_event("startup")
-async def _startup():
-    for attempt in range(20):
+async def _init_db_with_retry():
+    host = DATABASE_URL.split("@")[-1]
+    print(f"[startup] connecting to database at {host}")
+    for attempt in range(40):
         try:
             init_db()
+            print("[startup] database ready")
             return
         except Exception as e:  # noqa: BLE001
-            print(f"[startup] database not ready ({type(e).__name__}), retrying… {attempt + 1}/20")
-            await asyncio.sleep(1.5)
-    raise RuntimeError("Could not connect to PostgreSQL — is `npm run db` running?")
+            print(f"[startup] database not ready ({type(e).__name__}: {str(e).strip()[:300]}) {attempt + 1}/40")
+            await asyncio.sleep(3)
+    print(f"[startup] GAVE UP connecting to {host}. Check DATABASE_URL.")
+
+
+@app.on_event("startup")
+async def _startup():
+    asyncio.create_task(_init_db_with_retry())  # don't block port binding
+
 
 
 @app.exception_handler(GeminiError)
