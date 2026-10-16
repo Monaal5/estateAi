@@ -30,10 +30,9 @@ const DocumentUpload: React.FC<{ dealId: string; onDealUpdated: () => void }> = 
       const r = await api(`/deals/${dealId}/documents/upload`, { method: 'POST', body: fd });
       setOpen(r.document.id);
       const keys = Object.keys(r.updatedFields || {});
-      if (keys.length) {
-        setNotice(`Deal updated from document: ${keys.join(', ')}. Metrics re-underwritten.`);
-        onDealUpdated();
-      } else setNotice('Document processed. No deal financials changed.');
+      const warn = (r.warnings || []).join(' ');
+      setNotice((keys.length ? `Deal updated from document: ${keys.join(', ')}. Metrics re-underwritten.` : 'Document processed. No deal fields changed.') + (warn ? ` ⚠ ${warn}` : ''));
+      onDealUpdated(); // analyses are rebuilt from the documents
       await load();
     } catch (e: any) {
       setError(e.message);
@@ -46,6 +45,7 @@ const DocumentUpload: React.FC<{ dealId: string; onDealUpdated: () => void }> = 
   const remove = async (id: number) => {
     await api(`/deals/${dealId}/documents/${id}`, { method: 'DELETE' }).catch(() => {});
     load();
+    onDealUpdated();
   };
 
   return (
@@ -89,6 +89,9 @@ const DocumentUpload: React.FC<{ dealId: string; onDealUpdated: () => void }> = 
                 ))}
                 {d.extracted?.discrepancies?.map((x: any, i: number) => (
                   <p key={i} className="text-rose-700"><b>{x.field}:</b> doc {x.documentValue} vs deal {x.dealValue}</p>
+                ))}
+                {d.extracted?.internalConflicts?.map((x: any, i: number) => (
+                  <p key={`ic${i}`} className="text-amber-700"><b>Inconsistent {x.field}:</b> {x.valueA} ({x.sourceA}) vs {x.valueB} ({x.sourceB})</p>
                 ))}
               </div>
             )}
@@ -150,8 +153,9 @@ const Copilot: React.FC<{ dealId: string }> = ({ dealId }) => {
   );
 };
 
-export const Underwriting: React.FC<{ dealId: string | null }> = ({ dealId }) => {
+export const Underwriting: React.FC<{ dealId: string | null; onDealsChanged?: () => void }> = ({ dealId, onDealsChanged }) => {
   const q = useApi(dealId ? `/deals/${dealId}/underwriting` : null);
+  const onDocsChanged = () => { q.reload(); onDealsChanged?.(); };
   if (!dealId) return <p className="text-slate-500">Select a deal from the Deal Inbox.</p>;
   const d = q.data;
   const deal = d?.deal;
@@ -179,6 +183,9 @@ export const Underwriting: React.FC<{ dealId: string | null }> = ({ dealId }) =>
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <Card title="Extraction Verification & Attribution">
+                {d.basis === 'simulated' && (
+                  <p id="simulated-notice" className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3">No borrower documents uploaded yet — the facts below are AI-simulated for illustration. Upload the loan package to replace them with real extractions.</p>
+                )}
                 <p className="text-sm text-slate-600 mb-4">{d.analystNote}</p>
                 <Table head={['Field', 'Extracted Value', 'Source', 'Confidence', 'Status']}>
                   {d.extractions?.map((x: any, i: number) => (
@@ -230,7 +237,7 @@ export const Underwriting: React.FC<{ dealId: string | null }> = ({ dealId }) =>
             </div>
 
             <div className="space-y-6">
-              <DocumentUpload dealId={dealId} onDealUpdated={q.reload} />
+              <DocumentUpload dealId={dealId} onDealUpdated={onDocsChanged} />
               <Copilot dealId={dealId} />
               <Card title="Risk Flags">
                 <ul className="space-y-2">{d.riskFlags?.map((r: string, i: number) => <li key={i} className="text-sm flex gap-2"><span className="text-orange-500">▲</span>{r}</li>)}</ul>

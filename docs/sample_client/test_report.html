@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>estate AI — Test Execution Report: Harborview Commons Client Package</title>
+<style>
+@page { size: A4; margin: 15mm 14mm 16mm 14mm; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 9.6pt; color: #1e293b; line-height: 1.45; margin: 0; }
+h1 { font-size: 22pt; color: #0b1f3a; margin: 0; }
+h2 { font-size: 13.5pt; color: #0b1f3a; border-bottom: 3px solid #c9a227; padding-bottom: 3px; margin: 18px 0 8px; page-break-after: avoid; }
+h3 { font-size: 10.8pt; color: #13315c; margin: 12px 0 5px; page-break-after: avoid; }
+table { width: 100%; border-collapse: collapse; margin: 5px 0 10px; font-size: 8.5pt; }
+th { background: #0b1f3a; color: #fff; text-align: left; padding: 4px 6px; }
+td { border: 1px solid #cbd5e1; padding: 3.5px 6px; vertical-align: top; }
+tr { page-break-inside: avoid; }
+code { font-family: Consolas, monospace; background: #eef2f7; padding: 0 3px; border-radius: 3px; font-size: 8.2pt; }
+.hdr { background: linear-gradient(135deg, #0b1f3a, #1d4e89); color: #fff; padding: 16px 18px; border-radius: 6px; margin-bottom: 12px; }
+.hdr h1 { color: #fff; } .hdr .t { color: #c9a227; letter-spacing: 2px; font-size: 8.5pt; font-weight: 700; text-transform: uppercase; }
+.hdr .m { font-size: 9pt; color: #dbe4f0; margin-top: 6px; }
+.kpis { display: flex; gap: 8px; margin: 10px 0; }
+.kpi { flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; text-align: center; }
+.kpi b { display: block; font-size: 17pt; color: #0b1f3a; } .kpi span { font-size: 7.8pt; color: #64748b; text-transform: uppercase; }
+.pass { color: #15803d; font-weight: 700; } .fail { color: #b91c1c; font-weight: 700; }
+.s1 { background: #b91c1c; color: #fff; padding: 1px 6px; border-radius: 3px; font-weight: 700; font-size: 7.8pt; }
+.s2 { background: #c2410c; color: #fff; padding: 1px 6px; border-radius: 3px; font-weight: 700; font-size: 7.8pt; }
+.s3 { background: #1d4e89; color: #fff; padding: 1px 6px; border-radius: 3px; font-weight: 700; font-size: 7.8pt; }
+.verdict { border-left: 5px solid #b91c1c; background: #fef2f2; padding: 9px 12px; margin: 10px 0; }
+.ok { border-left: 5px solid #15803d; background: #f0fdf4; padding: 9px 12px; margin: 10px 0; }
+.note { border-left: 4px solid #1d4e89; background: #eef4fb; padding: 7px 11px; margin: 8px 0; font-size: 8.8pt; }
+.def { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 11px; margin: 8px 0; page-break-inside: avoid; }
+.def h4 { margin: 0 0 4px; font-size: 10pt; color: #0b1f3a; }
+.def p { margin: 3px 0; }
+.pb { page-break-before: always; }
+.q { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 5px; padding: 6px 9px; margin: 6px 0; page-break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="t">QA Test Execution Report · EAI-QA-TR-001</div>
+  <h1>Client Document Upload Test — Harborview Commons</h1>
+  <div class="m">Application: estate AI (local build) · Executed: 16 Oct 2026, 20:31–20:34 IST · AI model: gemini-2.5-flash · DB: PostgreSQL 17.11<br>
+  Test input: <b>Harborview_Commons_Loan_Package.pdf</b> (12 pages, text-layer PDF) · Target deal: <b>DL-1001</b> · Lender policy: Apex Commercial Lending (DSCR ≥ 1.25x, LTV ≤ 75%)</div>
+</div>
+
+<h2>1. Executive Summary</h2>
+<div class="kpis">
+  <div class="kpi"><b>40</b><span>Checks executed</span></div>
+  <div class="kpi"><b class="pass">35</b><span>Passed</span></div>
+  <div class="kpi"><b class="fail">5</b><span>Failed</span></div>
+  <div class="kpi"><b>87.5%</b><span>Pass rate</span></div>
+  <div class="kpi"><b>6</b><span>Defects raised</span></div>
+</div>
+<div class="verdict"><b>Verdict: NO-GO.</b> The upload, extraction, database and audit pipeline work well. But one <b>critical</b> defect changes the lending decision. The AI read the <b>10-year loan term (120 months)</b> as the amortization period instead of the <b>30-year amortization (360 months)</b>. As a result DSCR was calculated as <b>0.68x instead of 1.20x</b>, the deal was graded <b>Weak instead of Marginal</b>, and the credit memo recommended <b>Decline</b>. A borrower with a fundable (conditionally approvable) deal would be wrongly declined.</div>
+
+<h3>Expected vs Actual — Key Numbers</h3>
+<table>
+<tr><th>Metric</th><th>In client PDF</th><th>Expected in app</th><th>Actual in app</th><th>Result</th></tr>
+<tr><td>Loan amount</td><td>$18,500,000</td><td>$18,500,000</td><td>$18,500,000</td><td class="pass">PASS</td></tr>
+<tr><td>Interest rate</td><td>6.75%</td><td>0.0675</td><td>0.0675</td><td class="pass">PASS</td></tr>
+<tr><td>Property value</td><td>$26,000,000</td><td>$26,000,000</td><td>$26,000,000</td><td class="pass">PASS</td></tr>
+<tr><td>NOI (T-12)</td><td>$1,728,359</td><td>$1,728,359</td><td>$1,728,359</td><td class="pass">PASS</td></tr>
+<tr><td>Amortization (termMonths)</td><td>30 yrs / 360 mo (term 10 yrs)</td><td>360</td><td><b>120</b></td><td class="fail">FAIL</td></tr>
+<tr><td>Annual debt service</td><td>—</td><td>$1,439,888</td><td><b>$2,549,095</b></td><td class="fail">FAIL</td></tr>
+<tr><td>DSCR</td><td>—</td><td>1.20x</td><td><b>0.68x</b></td><td class="fail">FAIL</td></tr>
+<tr><td>LTV</td><td>—</td><td>71.15%</td><td>71.15%</td><td class="pass">PASS</td></tr>
+<tr><td>Debt yield</td><td>—</td><td>9.34%</td><td>9.34%</td><td class="pass">PASS</td></tr>
+<tr><td>Grade</td><td>—</td><td>Marginal</td><td><b>Weak</b></td><td class="fail">FAIL</td></tr>
+<tr><td>Memo recommendation</td><td>—</td><td>Approve w/ Conditions or Decline (1.20x &lt; 1.25x)</td><td>Decline (based on wrong 0.68x)</td><td class="fail">Wrong basis</td></tr>
+</table>
+<p style="font-size:8.3pt;color:#64748b">Expected values come from running the project's own <code>backend/app/finance.py</code> on the figures in the PDF.</p>
+
+<h2>2. What Worked Well</h2>
+<div class="ok">
+<ul style="margin:0;padding-left:18px">
+<li>Upload accepted (HTTP 200, 53 s). All 12 pages were read from the text layer, so OCR was correctly skipped.</li>
+<li>Document type detected as <b>Loan Application</b>. <b>61 fields</b> extracted, each with page number and confidence. The summary paragraph was accurate.</li>
+<li>4 of 5 financial fields extracted exactly. The AI <i>did</i> extract <code>amortization_term_months = 360</code> as a field but put the wrong value into <code>financials</code>.</li>
+<li>8 discrepancies against the old deal listed (NOI, loan, value, term, borrower, sponsor, property, city).</li>
+<li>Risk flags correctly raised: tax reassessment (+$55–70K/yr), 25.8% lease rollover in Q4 2026, tax returns, bank statements and KYC outstanding.</li>
+<li>Deal re-underwritten automatically. The Inbox updated, and stale underwriting/memo analyses were invalidated and regenerated.</li>
+<li><b>Fixed-formula maths held:</b> the memo quoted exactly the computed DSCR and debt service, and stress tests were consistent (NOI −10% → 0.61x).</li>
+<li>Copilot answered honestly with "Unknown" rather than inventing facts. Chat history (10 messages) saved. All 8 AI calls logged with latency and status.</li>
+</ul>
+</div>
+
+<h2 class="pb">3. Detailed Test Results</h2>
+<table>
+<tr><th style="width:15mm">ID</th><th>Check</th><th>Actual</th><th style="width:13mm">Result</th></tr>
+<tr><td>T01</td><td>AI engine + DB healthy</td><td>ok=true, model gemini-2.5-flash, database ok</td><td class="pass">PASS</td></tr>
+<tr><td>T02</td><td>Pipeline loaded, deal selected</td><td>10 deals; DL-1001 (Multifamily, no existing debt)</td><td class="pass">PASS</td></tr>
+<tr><td>T03</td><td>Upload accepted</td><td>HTTP 200 in 53.3 s</td><td class="pass">PASS</td></tr>
+<tr><td>T04</td><td>Text PDF — no OCR</td><td>ocr = false</td><td class="pass">PASS</td></tr>
+<tr><td>T05</td><td>Page count = 12</td><td>12</td><td class="pass">PASS</td></tr>
+<tr><td>T06</td><td>Document type detected</td><td>Loan Application</td><td class="pass">PASS</td></tr>
+<tr><td>T07</td><td>≥ 15 fields extracted</td><td>61 fields</td><td class="pass">PASS</td></tr>
+<tr><td>T08a–e</td><td>Financials extracted (loan, rate, term, value, NOI)</td><td>4/5 correct; termMonths = 120 (expected 360)</td><td class="fail">1 FAIL</td></tr>
+<tr><td>T09a–e</td><td>Deal fields updated</td><td>4/5 correct; termMonths = 120</td><td class="fail">1 FAIL</td></tr>
+<tr><td>T10a–f</td><td>Re-underwritten metrics</td><td>LTV, DY, passesDscr, passesLtv correct; DSCR 0.68 (exp 1.20), grade Weak (exp Marginal)</td><td class="fail">2 FAIL</td></tr>
+<tr><td>T11</td><td>Discrepancies vs deal listed</td><td>8 discrepancies</td><td class="pass">PASS</td></tr>
+<tr><td>T12</td><td>Occupancy conflict (application 96% vs rent roll 95%) flagged</td><td>Both values extracted as fields, but <b>not</b> flagged as a conflict or risk</td><td class="fail">FAIL</td></tr>
+<tr><td>T13</td><td>Tax reassessment risk flagged</td><td>Flagged ($55K–$70K/yr)</td><td class="pass">PASS</td></tr>
+<tr><td>T14</td><td>Lease rollover risk flagged</td><td>Flagged (25.8% Q4 2026)</td><td class="pass">PASS</td></tr>
+<tr><td>T15</td><td>Outstanding documents noticed</td><td>Tax returns, bank statements, KYC, title, insurance</td><td class="pass">PASS</td></tr>
+<tr><td>T16</td><td>Document saved &amp; listed</td><td>Listed under DL-1001</td><td class="pass">PASS</td></tr>
+<tr><td>T17</td><td>Inbox shows new metrics</td><td>Inbox row matches deal metrics</td><td class="pass">PASS</td></tr>
+<tr><td>T18</td><td>Underwriting regenerated</td><td>8 extractions, 4 risk flags (see DEF-04)</td><td class="pass">PASS</td></tr>
+<tr><td>T19</td><td>Credit memo generated</td><td>Decline</td><td class="pass">PASS</td></tr>
+<tr><td>T20</td><td>Memo not unconditional Approve</td><td>Decline</td><td class="pass">PASS</td></tr>
+<tr><td>T21</td><td>Memo quotes computed DSCR</td><td>0.68x quoted, matching computed value</td><td class="pass">PASS</td></tr>
+<tr><td>T22</td><td>Stress tests consistent</td><td>NOI −10% 0.61x · Rate +100bp 0.61x · Occ 85% 0.58x · NOI +10% 0.75x</td><td class="pass">PASS</td></tr>
+<tr><td>T23a–c</td><td>Copilot answers 3 questions</td><td>All answered (accuracy issue, see DEF-02)</td><td class="pass">PASS</td></tr>
+<tr><td>T24</td><td>Chat history persisted</td><td>10 messages</td><td class="pass">PASS</td></tr>
+<tr><td>T25</td><td>AI calls logged</td><td>document 51.9 s · underwriting 15.9 s · memo 61.5 s · chat 2.3–3.9 s — all ok</td><td class="pass">PASS</td></tr>
+</table>
+<div class="note">T22 was first scored FAIL by the automated script because its rule wrongly expected the <i>upside</i> scenario to be below base. It was re-scored PASS on manual review. T12 was first scored PASS by a loose keyword match. On manual review the conflict was never flagged, so it was re-scored FAIL. The 35/40 total includes both corrections.</div>
+
+<h2 class="pb">4. Defects Raised</h2>
+
+<div class="def"><h4><span class="s1">S1 CRITICAL</span> &nbsp;DEF-01 — Loan term used as amortization, so DSCR is wrong</h4>
+<p><b>Observed:</b> PDF states "Loan Term 10 years (120 months) · Amortization 30 years (360 months)". <code>financials.termMonths</code> = 120, so debt service is $2,549,095 and DSCR 0.68x instead of $1,439,888 and 1.20x.</p>
+<p><b>Root cause:</b> the upload prompt in <code>backend/app/main.py</code> (line ~377) asks only for <code>"termMonths":number</code> and never says this means <i>amortization</i>. The deal-generation prompt (line 80) does define it as amortization, so the two prompts are inconsistent.</p>
+<p><b>Impact:</b> wrong grade, wrong memo recommendation, wrong Copilot answers. Any loan with a term shorter than its amortization (most CRE loans) is affected.</p>
+<p><b>Suggested fix:</b> define the field explicitly ("<i>termMonths: AMORTIZATION period in months, NOT the loan maturity term</i>"), or extract both <code>loanTermMonths</code> and <code>amortizationMonths</code> and use the latter in <code>finance.py</code>.</p></div>
+
+<div class="def"><h4><span class="s2">S2 HIGH</span> &nbsp;DEF-02 — Copilot cannot see uploaded documents</h4>
+<p><b>Observed:</b> "What documents are still outstanding?" got the answer "rent roll and insurance". The rent roll <i>was</i> provided; the real outstanding items are tax returns, bank statements and KYC. "What is the tax reassessment risk?" got the answer "Unknown", even though the document extraction flagged it.</p>
+<p><b>Root cause:</b> the chat prompt (<code>main.py</code> lines 240–246) only includes DEAL, UNDERWRITING and MEMO. It does not include <code>uploaded_documents</code> (summary, fields, risk flags).</p>
+<p><b>Suggested fix:</b> add each document's summary, riskFlags and key fields to the Copilot context.</p></div>
+
+<div class="def"><h4><span class="s2">S2 HIGH</span> &nbsp;DEF-03 — Mixed deal identity after upload</h4>
+<p><b>Observed:</b> the AI detected that borrower, sponsor, property and city all differ from the deal, but only the financials were applied. The memo now says "<i>Apex Multifamily Holdings LLC … The Meridian at Brickell, Miami, FL</i>" while using Harborview's (Austin) numbers.</p>
+<p><b>Root cause:</b> <code>main.py</code> lines 391–401 apply only <code>financials</code>. There is no check that the document belongs to the deal, and there is no way to create a new deal for a new client.</p>
+<p><b>Suggested fix:</b> warn or block when identity fields mismatch, and add a "New deal from document" intake flow so a new client can be onboarded.</p></div>
+
+<div class="def"><h4><span class="s2">S2 HIGH</span> &nbsp;DEF-04 — Underwriting workspace shows simulated sources, not the real document</h4>
+<p><b>Observed:</b> the Extracted Facts panel cites "P&amp;L Statement, FY2023", "Purchase Agreement, Exhibit B" and "Term Sheet, V2". None of these exist in the uploaded package.</p>
+<p><b>Root cause:</b> <code>underwriting_prompt</code> (<code>main.py</code> line 162) tells the AI to "<i>simulate what document extraction found</i>" and does not receive the uploaded documents. This contradicts the README's "No fake data" principle.</p>
+<p><b>Suggested fix:</b> when documents exist, build extractions from the stored <code>extracted_data</code> (real source and page); simulate only when no documents are uploaded, and label that clearly.</p></div>
+
+<div class="def"><h4><span class="s3">S3 MEDIUM</span> &nbsp;DEF-05 — Memo says package 100% complete although documents are outstanding</h4>
+<p><b>Observed:</b> <code>packageCompleteness = 100</code> while tax returns, bank statements and KYC are listed as outstanding in the client PDF.</p>
+<p><b>Root cause:</b> <code>memo_prompt</code> (line 172) receives no document data. <b>Suggested fix:</b> pass document checklists and risk flags into the memo prompt.</p></div>
+
+<div class="def"><h4><span class="s3">S3 MEDIUM</span> &nbsp;DEF-06 — Internal occupancy conflict not flagged</h4>
+<p><b>Observed:</b> the application states 96% occupancy, while the certified rent roll shows 95.0% (114/120). Both values were extracted but no conflict was raised. <b>Suggested fix:</b> add an instruction to the extraction prompt to cross-check values <i>within</i> the document, not only against the deal.</p></div>
+
+<h2>5. Copilot Transcript (as tested)</h2>
+<div class="q"><b>Q:</b> Why does this deal fail lender policy?<br><b>A:</b> This deal fails lender policy primarily because the DSCR of 0.68x is significantly below the minimum policy requirement of 1.25x. The proposed annual debt service of $2,549,095 also far exceeds the NOI of $1,728,359… <br><i>Assessment: reasoning correct, but the numbers are wrong because of DEF-01.</i></div>
+<div class="q"><b>Q:</b> What documents are still outstanding from the borrower?<br><b>A:</b> The borrower still needs to provide the latest rent roll … and evidence of property and liability insurance…<br><i>Assessment: incorrect (DEF-02). Expected: 2024–25 tax returns, 3 months bank statements, KYC/OFAC, title and insurance binder.</i></div>
+<div class="q"><b>Q:</b> What is the real estate tax reassessment risk and how much could it reduce DSCR?<br><b>A:</b> Unknown. The provided context does not contain information regarding real estate tax reassessment risk…<br><i>Assessment: honest (no hallucination), but the information was available in the uploaded document (DEF-02). Expected: +$55–70K taxes → NOI ≈ $1.66M → DSCR ≈ 1.15x.</i></div>
+
+<h2>6. Performance Observed</h2>
+<table>
+<tr><th>Operation</th><th>Time</th><th>Target (Test Plan)</th><th>Result</th></tr>
+<tr><td>Deal list (cached)</td><td>0.1 s</td><td>&lt; 0.5 s</td><td class="pass">PASS</td></tr>
+<tr><td>Upload + AI extraction (12-page PDF)</td><td>53.3 s</td><td>&lt; 30 s</td><td class="fail">FAIL (AI latency)</td></tr>
+<tr><td>Underwriting regeneration</td><td>16.0 s</td><td>—</td><td>Info</td></tr>
+<tr><td>Credit memo generation</td><td>61.6 s</td><td>—</td><td>Info (long; show progress)</td></tr>
+<tr><td>Copilot answer</td><td>2.4–4.0 s</td><td>—</td><td class="pass">Good</td></tr>
+</table>
+
+<h2>7. Recommendation &amp; Next Steps</h2>
+<table>
+<tr><th>#</th><th>Action</th><th>Priority</th></tr>
+<tr><td>1</td><td>Fix DEF-01 (amortization vs term) and re-run this exact test. Expected DSCR 1.20x, grade Marginal.</td><td><span class="s1">S1</span></td></tr>
+<tr><td>2</td><td>Feed uploaded document data into Copilot, Underwriting and Memo prompts (DEF-02, 04, 05).</td><td><span class="s2">S2</span></td></tr>
+<tr><td>3</td><td>Add a client-identity check and a "new deal from document" intake flow (DEF-03).</td><td><span class="s2">S2</span></td></tr>
+<tr><td>4</td><td>Add an in-document cross-check instruction (DEF-06); show progress text for long AI steps.</td><td><span class="s3">S3</span></td></tr>
+</table>
+<p><b>Release decision:</b> ☐ Go &nbsp; ☐ Go with conditions &nbsp; ☒ <b>No-Go until DEF-01 is fixed and retested</b>.</p>
+<p style="font-size:8pt;color:#64748b;margin-top:14px">Evidence: raw API responses saved in <code>scratch/pdf_test_results.json</code>; test script <code>scratch/run_pdf_test.py</code>. Note: deal DL-1001 in the local database now contains the Harborview figures and the uploaded document.</p>
+</body>
+</html>

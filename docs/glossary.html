@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>estate AI â€“ Glossary of Terms</title>
+<style>
+@page { size: A4; margin: 14mm 14mm; }
+body { font-family: "Segoe UI", Arial, sans-serif; color:#1e293b; font-size:10.5pt; line-height:1.4; }
+h1 { color:#0b1f3a; font-size:24pt; margin:0; }
+h2 { color:#fff; background:#0b1f3a; font-size:13pt; padding:6px 10px; border-radius:6px; margin:16px 0 8px; }
+.sub { color:#475569; margin:4px 0 10px; }
+.deal { background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:8px 12px; margin:8px 0 4px; }
+.deal td { border:none; padding:2px 10px 2px 0; }
+table.g { width:100%; border-collapse:collapse; margin-bottom:4px; }
+table.g td, table.g th { border:1px solid #e2e8f0; padding:5px 7px; text-align:left; vertical-align:top; }
+table.g th { background:#e0e7ff; color:#0b1f3a; font-size:9.5pt; }
+table.g td:first-child { font-weight:700; color:#0b1f3a; width:19%; }
+table.g td:nth-child(2) { width:41%; }
+table.g td:nth-child(3) { color:#334155; background:#f8fafc; font-size:9.8pt; }
+.f { font-family: Consolas, monospace; background:#f1f5f9; padding:1px 4px; border-radius:3px; }
+.good { color:#047857; font-weight:700; } .bad { color:#be123c; font-weight:700; }
+.pb { page-break-before: always; }
+tr { page-break-inside: avoid; }
+</style></head><body>
+
+<h1>estate AI â€” Terms Made Simple</h1>
+<p class="sub">Every word you'll see in the app, explained in plain English, with an example from the page where it appears.</p>
+
+<div class="deal"><b>One example deal used throughout this guide</b>
+<table>
+<tr><td>Property:</td><td><b>Harbor View Apartments</b> (Multifamily, Austin, TX)</td><td>Borrower:</td><td>Harbor View Holdings LLC</td></tr>
+<tr><td>Loan asked:</td><td><b>$7,000,000</b> at 6.5% over 25 years</td><td>Property value:</td><td><b>$10,000,000</b></td></tr>
+<tr><td>Yearly profit (NOI):</td><td><b>$750,000</b></td><td>Yearly loan payments:</td><td><b>â‰ˆ $567,000</b></td></tr>
+</table></div>
+
+<h2>1. Deal Pipeline &amp; Inbox â€” the list of all loan requests</h2>
+<table class="g">
+<tr><th>Term</th><th>Plain meaning</th><th>Example on this page</th></tr>
+<tr><td>Deal / Facility</td><td>One loan request from one borrower.</td><td>"DL-1042 â€“ Harbor View Apartments â€“ $7.0M".</td></tr>
+<tr><td>Borrower</td><td>The company that will take the loan and repay it.</td><td>Harbor View Holdings LLC.</td></tr>
+<tr><td>Sponsor</td><td>The real person or firm behind the borrower company, who runs the property.</td><td>Sponsor: Maria Lopez.</td></tr>
+<tr><td>Property Type</td><td>What kind of building it is (apartments, shops, offices, warehouse, hotel, mixed).</td><td>Multifamily = apartment building.</td></tr>
+<tr><td>Purpose</td><td>Why they want the money: <b>Acquisition</b> (buy), <b>Refinance</b> (replace an old loan), <b>Construction</b> (build), <b>Bridge</b> (short-term until a long loan).</td><td>Purpose: Acquisition â€” they are buying the building.</td></tr>
+<tr><td>Loan Amount</td><td>How much money the borrower is asking for.</td><td>$7,000,000.</td></tr>
+<tr><td>Stage</td><td>Where the deal is in the bank's process: Intake â†’ Extraction Review â†’ Underwriting Analysis â†’ Credit Memo â†’ Term Sheet Issued â†’ Lender Submission.</td><td>Stage: Underwriting Analysis â€” an analyst is checking it now.</td></tr>
+<tr><td>Compliance State</td><td>Are the legal checks done? <b>Verified</b> (all good), <b>KYC Pending</b> (identity not yet checked), <b>Docs Outstanding</b> (papers missing), <b>Exception Flagged</b> (rule broken).</td><td>KYC Pending â€” borrower's ID check still running.</td></tr>
+<tr><td>KYC</td><td>"Know Your Customer" â€” checking the borrower is who they say they are and not a fraud risk.</td><td>Passport and company papers verified.</td></tr>
+<tr><td>Priority</td><td>How urgent the deal is (High / Medium / Low).</td><td>High â€” closing date is in 2 weeks.</td></tr>
+<tr><td>Blockers</td><td>Number of problems stopping the deal from moving forward.</td><td>1 blocker â€” insurance certificate missing.</td></tr>
+<tr><td>Days in Stage</td><td>How long the deal has been stuck at its current step.</td><td>6 days in Underwriting.</td></tr>
+<tr><td>Total Volume</td><td>All loan amounts in the pipeline added together.</td><td>10 deals = $142M total volume.</td></tr>
+<tr><td>Impasses</td><td>Deals whose compliance is not yet "Verified".</td><td>3 impasses.</td></tr>
+</table>
+
+<h2>2. Underwriting Workspace â€” the key money numbers</h2>
+<table class="g">
+<tr><th>Term</th><th>Plain meaning</th><th>Example on this page</th></tr>
+<tr><td>Underwriting</td><td>The bank checking, in detail, whether a loan is safe to give.</td><td>The whole workspace page.</td></tr>
+<tr><td>NOI (Net Operating Income)</td><td>Yearly rent collected minus running costs (repairs, tax, insurance, staff). Loan payments are <i>not</i> subtracted.</td><td>Rent $1.2M âˆ’ costs $450k = <b>NOI $750,000</b>.</td></tr>
+<tr><td>Interest Rate</td><td>The yearly cost of borrowing, as a %.</td><td>6.50%.</td></tr>
+<tr><td>Amortization / Term</td><td>How many years the loan is spread over to be fully paid off.</td><td>25 years (300 months).</td></tr>
+<tr><td>Debt Service</td><td>Total loan payments (interest + principal) in one year.</td><td>Monthly $47,266 Ã— 12 = <b>$567,000</b>.</td></tr>
+<tr><td>Existing Debt Service</td><td>Payments on other loans on the same property that will stay in place.</td><td>$0 â€” no other loans.</td></tr>
+<tr><td>DSCR (Debt Service Coverage Ratio)</td><td>Can the profit pay the loan? <span class="f">NOI Ã· Debt Service</span>. 1.00x = just enough; higher is safer. Bank minimum here: <b>1.25x</b>.</td><td>$750k Ã· $567k = <span class="good">1.32x</span> â†’ passes (green).</td></tr>
+<tr><td>Property Value</td><td>What the building is worth (usually from an appraisal).</td><td>$10,000,000.</td></tr>
+<tr><td>LTV (Loan-to-Value)</td><td>How much of the building's value is borrowed. <span class="f">Loan Ã· Value Ã— 100</span>. Lower is safer. Bank maximum here: <b>75%</b>.</td><td>$7M Ã· $10M = <span class="good">70%</span> â†’ passes.</td></tr>
+<tr><td>Debt Yield</td><td>Profit as a % of the loan: <span class="f">NOI Ã· Loan Ã— 100</span>. Shows how fast the bank could get its money back if it took the building.</td><td>$750k Ã· $7M = <b>10.7%</b>.</td></tr>
+<tr><td>Grade</td><td>Overall safety label from DSCR and LTV (Strong / Adequate / Marginal / Weak).</td><td>Grade: Adequate.</td></tr>
+<tr><td>Credit Policy</td><td>The bank's fixed rules every loan must meet.</td><td>Min DSCR 1.25x, Max LTV 75%.</td></tr>
+<tr><td>Extraction</td><td>Pulling a number or fact out of a document automatically.</td><td>"NOI $750,000" pulled from the T-12.</td></tr>
+<tr><td>Source</td><td>Which document and page a value came from.</td><td>"Operating Statement, page 3".</td></tr>
+<tr><td>Confidence</td><td>How sure the AI is that it read the value correctly (0â€“100%).</td><td>94% (green bar) â€” very likely correct.</td></tr>
+<tr><td>Status: Confirmed / Needs Review / Conflict</td><td>Confirmed = checked OK; Needs Review = a human should look; Conflict = two documents disagree.</td><td>Occupancy: Conflict.</td></tr>
+<tr><td>Conflicting Source Values</td><td>The same fact shows different numbers in two documents.</td><td>Rent roll says 94% occupied, appraisal says 89%.</td></tr>
+<tr><td>Severity</td><td>How serious a conflict is (High / Medium).</td><td>High â€” affects the NOI.</td></tr>
+<tr><td>Conditions</td><td>Things that must be done or received before the loan can close.</td><td>"Provide property insurance certificate".</td></tr>
+<tr><td>Condition Status</td><td><b>Open</b> (not started), <b>Requested</b> (asked for), <b>Received</b> (got it), <b>Waived</b> (no longer needed).</td><td>Insurance: Requested.</td></tr>
+<tr><td>Owner</td><td>Who must deliver the condition: Borrower, Broker or Processor.</td><td>Owner: Borrower.</td></tr>
+<tr><td>Risk Flags</td><td>Short warnings about things that could go wrong.</td><td>"â–² Two tenants leases end within 12 months".</td></tr>
+</table>
+
+<h2>3. Loan Documents &amp; Copilot â€” inside the Underwriting page</h2>
+<table class="g">
+<tr><th>Term</th><th>Plain meaning</th><th>Example on this page</th></tr>
+<tr><td>Rent Roll</td><td>List of every tenant, their unit, rent and lease end date.</td><td>48 units, 45 occupied, avg rent $2,100.</td></tr>
+<tr><td>Operating Statement / T-12</td><td>The property's income and expenses for the last 12 months ("Trailing 12").</td><td>T-12 shows NOI $735,000.</td></tr>
+<tr><td>Appraisal</td><td>A professional report saying what the building is worth.</td><td>Appraised value $10,000,000.</td></tr>
+<tr><td>Tax Return / Bank Statement</td><td>Proof of the borrower's income and cash.</td><td>Sponsor holds $1.2M in cash.</td></tr>
+<tr><td>Purchase Agreement</td><td>The contract to buy the building and the agreed price.</td><td>Price $10.2M.</td></tr>
+<tr><td>OCR (AI OCR badge)</td><td>"Optical Character Recognition" â€” the AI reads text from a scanned page or photo.</td><td>Uploaded phone photo of T-12 â†’ badge <b>AI OCR</b>.</td></tr>
+<tr><td>Discrepancy</td><td>A number in the uploaded document doesn't match the deal.</td><td>"NOI: doc $735,000 vs deal $750,000".</td></tr>
+<tr><td>Re-underwritten</td><td>Ratios recalculated after a document changed a number.</td><td>NOI updated â†’ DSCR drops from 1.32x to 1.30x.</td></tr>
+<tr><td>Copilot</td><td>A chat assistant that answers only from this deal's data.</td><td>Q: "Biggest risk?" â†’ "Lease rollover in 2027."</td></tr>
+<tr><td>Citations</td><td>The documents/fields the Copilot used to answer.</td><td>Badges: "Rent Roll", "Risk Flags".</td></tr>
+</table>
+
+<h2>4. Credit Memorandum â€” the final report</h2>
+<table class="g">
+<tr><th>Term</th><th>Plain meaning</th><th>Example on this page</th></tr>
+<tr><td>Credit Memo</td><td>The final report presented to the bank's loan committee.</td><td>4-page memo for Harbor View.</td></tr>
+<tr><td>Recommendation</td><td><b>Approve</b>, <b>Approve with Conditions</b>, <b>Decline</b> or <b>Defer</b> (decide later).</td><td>Approve with Conditions.</td></tr>
+<tr><td>Rationale</td><td>The reason behind the recommendation.</td><td>"Strong location; DSCR thin under stress."</td></tr>
+<tr><td>Executive Summary</td><td>The whole deal in one short paragraph.</td><td>"$7M acquisition loan on 48-unit assetâ€¦"</td></tr>
+<tr><td>Sponsor Analysis</td><td>How experienced and financially strong the owner is.</td><td>"Owns 6 similar buildings, 15 years' experience."</td></tr>
+<tr><td>Market Analysis</td><td>How healthy the local property market is.</td><td>"Austin vacancy 6%, rents up 3% a year."</td></tr>
+<tr><td>Collateral</td><td>The property the bank can take if the loan isn't repaid.</td><td>The building itself.</td></tr>
+<tr><td>Strengths / Weaknesses</td><td>Good points / worrying points about the deal.</td><td>Strength: low LTV. Weakness: older roof.</td></tr>
+<tr><td>Mitigants</td><td>Things that reduce a weakness.</td><td>"$150k repair reserve set aside for the roof."</td></tr>
+<tr><td>Stress Test</td><td>"What if things get worse?" â€” DSCR recalculated in bad scenarios.</td><td>NOI âˆ’10% â†’ $675k Ã· $567k = <span class="bad">1.19x</span> â†’ fails 1.25x.</td></tr>
+<tr><td>Lender Match / Fit</td><td>Which lenders' programs suit this deal, scored 0â€“100.</td><td>"Regional Bank â€“ Multifamily program â€“ 88% fit".</td></tr>
+<tr><td>Package Completeness</td><td>% of required documents already collected.</td><td>85% â€” insurance still missing.</td></tr>
+</table>
+
+<h2>5. Extraction Audit â€” how well the AI reads documents</h2>
+<table class="g">
+<tr><th>Term</th><th>Plain meaning</th><th>Example on this page</th></tr>
+<tr><td>Documents Processed</td><td>How many files the AI has read.</td><td>64 documents.</td></tr>
+<tr><td>Fields Extracted</td><td>How many individual values were pulled out.</td><td>312 fields.</td></tr>
+<tr><td>Auto-accept Rate</td><td>% of values accepted without a human changing them.</td><td>87%.</td></tr>
+<tr><td>Human Override</td><td>An analyst corrected what the AI read.</td><td>Value $9.8M â†’ changed to $10.0M by J. Patel.</td></tr>
+<tr><td>Rejected / Escalated</td><td>Rejected = value thrown out; Escalated = sent to a senior person.</td><td>Escalated: unclear lease date.</td></tr>
+<tr><td>Avg Confidence</td><td>Average certainty of the AI across all values.</td><td>91%.</td></tr>
+<tr><td>Actor</td><td>Who took the action: "system" (AI) or an analyst's name.</td><td>Actor: system.</td></tr>
+</table>
+
+<h2>6. Syndication &amp; Term Sheets â€” sharing and offering loans</h2>
+<table class="g">
+<tr><th>Term</th><th>Plain meaning</th><th>Example on this page</th></tr>
+<tr><td>Term Sheet</td><td>A short offer letter listing the main loan terms before the final contract.</td><td>Term sheet for DL-1042 from Regional Bank.</td></tr>
+<tr><td>SOFR</td><td>A standard US base interest rate that changes over time; loan rates are set "above" it.</td><td>SOFR â‰ˆ 4.3%.</td></tr>
+<tr><td>Spread / bps</td><td>Extra interest above SOFR. 1 basis point (bp) = 0.01%, so 285 bps = 2.85%.</td><td>"SOFR + 285" â‰ˆ 4.3% + 2.85% = 7.15%.</td></tr>
+<tr><td>"5 yr / 30 yr amort"</td><td>Loan lasts 5 years, but payments are calculated as if spread over 30 years (a balance is left at the end).</td><td>Term: 5 yr / 30 yr amort.</td></tr>
+<tr><td>Term Sheet Status</td><td>Drafting â†’ Issued â†’ Negotiating â†’ Accepted / Declined.</td><td>Status: Negotiating.</td></tr>
+<tr><td>Key Terms</td><td>Important special rules in the offer.</td><td>"No prepayment penalty after year 2".</td></tr>
+<tr><td>Syndication</td><td>Splitting one big loan among several banks so no one takes all the risk.</td><td>A $40M loan shared by 3 banks.</td></tr>
+<tr><td>Lead Lender / Participants</td><td>Lead = bank that organises and manages the loan; participants = banks that take a share.</td><td>Lead 50%, Bank B 30%, Bank C 20%.</td></tr>
+</table>
+
+<h2>7. Covenant Compliance â€” watching promises after the loan</h2>
+<table class="g">
+<tr><th>Term</th><th>Plain meaning</th><th>Example on this page</th></tr>
+<tr><td>Covenant</td><td>A promise in the loan contract the borrower must keep for the whole loan.</td><td>"Minimum DSCR 1.20x".</td></tr>
+<tr><td>Threshold</td><td>The limit set by the covenant.</td><td>1.20x.</td></tr>
+<tr><td>Actual</td><td>The borrower's real current number.</td><td>1.32x.</td></tr>
+<tr><td>Compliant / Watch / Breach</td><td>Compliant = safe; Watch = close to the limit; Breach = promise broken.</td><td>1.32x vs 1.20x â†’ <span class="good">Compliant</span>. A deal at 1.08x â†’ <span class="bad">Breach</span>.</td></tr>
+<tr><td>Next Test</td><td>The next date the number will be checked.</td><td>2026-12-31.</td></tr>
+<tr><td>Alert / Severity</td><td>A warning, ranked High / Medium / Low.</td><td>High: "DL-1047 DSCR breach â€” call borrower."</td></tr>
+</table>
+
+<h2>8. Everywhere in the app</h2>
+<table class="g">
+<tr><th>Term</th><th>Plain meaning</th><th>Example</th></tr>
+<tr><td>AI Engine Live / Offline</td><td>Shows whether the AI is working right now.</td><td>Green "AI Engine Live" in the top bar.</td></tr>
+<tr><td>AI generated Â· time</td><td>This content was written by the AI at that time.</td><td>"AI generated Â· 3:42 PM".</td></tr>
+<tr><td>Regenerate</td><td>Ask the AI to produce a fresh version of the page.</td><td>Click after uploading new documents.</td></tr>
+<tr><td>Active Deal / Active Facility</td><td>The loan you are currently working on.</td><td>Harbor View Apartments ($7.0M).</td></tr>
+<tr><td>Deterministic</td><td>Calculated by fixed maths, always giving the same answer â€” not guessed by AI.</td><td>DSCR, LTV and Debt Yield.</td></tr>
+</table>
+
+</body></html>
+

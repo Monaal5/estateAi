@@ -1,6 +1,7 @@
 import asyncio
 import io
 import json
+import re
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from pypdf import PdfReader
@@ -120,6 +121,19 @@ def get_deal(deal_id: str) -> Deal:
     return d
 
 
+def doc_context(deal_id: str) -> list[dict]:
+    """Real facts from the borrower's uploaded documents, shared with every AI view of the deal."""
+    with SessionLocal() as s:
+        rows = s.scalars(select(UploadedDocument).where(UploadedDocument.deal_id == deal_id).order_by(UploadedDocument.id)).all()
+    out = []
+    for d in rows:
+        x = d.extracted_data or {}
+        out.append({"document": d.filename, "type": d.doc_type, "pages": d.page_count, "summary": x.get("summary"),
+                    "fields": (x.get("fields") or [])[:70], "riskFlags": x.get("riskFlags") or [],
+                    "internalConflicts": x.get("internalConflicts") or [], "outstandingItems": x.get("outstandingItems") or []})
+    return out
+
+
 @app.get("/api/health")
 async def health():
     try:
@@ -158,8 +172,18 @@ async def list_deals(refresh: int = 0):
 
 
 # ---------------------------------------------------------------- per-deal artifacts
-def underwriting_prompt(deal: dict) -> str:
-    return f"""You are a CRE loan underwriting extraction engine. For this deal, simulate what document extraction found.
+def underwriting_prompt(deal: dict, docs: list[dict]) -> str:
+    if docs:
+        return f"""You are a CRE loan underwriting review engine. Build the review ONLY from the borrower's UPLOADED DOCUMENTS. Never invent documents, sources or values.
+DEAL (metrics are computed and authoritative): {json.dumps(deal)}
+UPLOADED DOCUMENTS: {json.dumps(docs)}
+Return JSON:
+{{"extractions":[{{"field":"e.g. Net Operating Income","value":"formatted value","source":"<document filename>, page N","confidence":0-100,"status":"Confirmed|Needs Review|Conflict"}}] (the 8 most material facts, taken from the documents' fields; Conflict if contradicted elsewhere, Needs Review if confidence < 85),
+"conflicts":[{{"field":"...","valueA":"...","sourceA":"document, page","valueB":"...","sourceB":"document, page","severity":"High|Medium","recommendation":"..."}}] (from internalConflicts and values that disagree between documents; [] if none),
+"conditions":[{{"title":"...","category":"Documentation|Insurance|Legal|Appraisal|Financial","status":"Open|Requested|Received|Waived","owner":"Borrower|Broker|Processor","note":"..."}}] (4-6: one per outstanding item in the documents, plus any required by policy breaches in the metrics),
+"riskFlags":["short risk statements from the documents and metrics"] (3-5),
+"analystNote":"2-3 sentence summary of where underwriting stands"}}"""
+    return f"""You are a CRE loan underwriting extraction engine. No borrower documents are uploaded yet, so simulate what document extraction would find (illustrative only).
 DEAL: {json.dumps(deal)}
 Return JSON:
 {{"extractions":[{{"field":"e.g. Net Operating Income","value":"formatted value","source":"document name, page N","confidence":0-100,"status":"Confirmed|Needs Review|Conflict"}}] (8 items, consistent with the deal numbers),
@@ -169,11 +193,13 @@ Return JSON:
 "analystNote":"2-3 sentence summary of where underwriting stands"}}"""
 
 
-def memo_prompt(deal: dict) -> str:
-    return f"""You are a senior CRE credit officer writing a credit memorandum.
+def memo_prompt(deal: dict, docs: list[dict]) -> str:
+    return f"""You are a senior CRE credit officer writing a credit memorandum. Use borrower, sponsor and property names exactly as in DEAL.
 DEAL: {json.dumps(deal)}
 COMPUTED METRICS (authoritative, do not change): {json.dumps(deal["metrics"])}
 LENDER POLICY: {json.dumps(POLICY)}
+UPLOADED BORROWER DOCUMENTS: {json.dumps(docs) if docs else "none uploaded"}
+Base sponsor, market and collateral analysis on the documents where available. packageCompleteness must reflect outstanding/missing items in the documents (100 only if nothing is outstanding; low if no documents are uploaded).
 Return JSON:
 {{"recommendation":"Approve|Approve with Conditions|Decline|Defer","recommendationRationale":"...",
 "executiveSummary":"paragraph","sponsorAnalysis":"paragraph","marketAnalysis":"paragraph","collateralAnalysis":"paragraph",
@@ -193,9 +219,11 @@ async def deal_artifact(deal_id: str, kind: str, refresh: bool):
         art = s.scalar(select(DealArtifact).where(DealArtifact.deal_id == deal_id, DealArtifact.kind == kind))
     if not art or refresh:
         prompt_fn, temp = PROMPTS[kind]
+        docs = doc_context(deal_id)
 
         async def gen():
-            data, model = await generate_json(prompt_fn(deal), f"{kind}:{deal_id}", temp)
+            data, model = await generate_json(prompt_fn(deal, docs), f"{kind}:{deal_id}", temp)
+            data["basis"] = "documents" if docs else "simulated"
             with SessionLocal() as s:
                 s.execute(delete(DealArtifact).where(DealArtifact.deal_id == deal_id, DealArtifact.kind == kind))
                 a = DealArtifact(deal_id=deal_id, kind=kind, data=data, model=model)
@@ -237,8 +265,9 @@ async def chat(deal_id: str, body: ChatIn):
         arts = {a.kind: a.data for a in s.scalars(select(DealArtifact).where(DealArtifact.deal_id == deal_id))}
         history = s.scalars(select(ChatMessage).where(ChatMessage.deal_id == deal_id).order_by(ChatMessage.id.desc()).limit(6)).all()
     memo_ctx = {"recommendation": arts["memo"].get("recommendation"), "weaknesses": arts["memo"].get("weaknesses")} if "memo" in arts else "not generated yet"
-    prompt = f"""You are a read-only CRE underwriting copilot. Answer ONLY from the context. If unknown, say so.
-DEAL: {json.dumps(deal)}
+    prompt = f"""You are a read-only CRE underwriting copilot. Answer ONLY from the context. If unknown, say so. Cite document names and pages when you use them.
+DEAL (metrics are computed and authoritative): {json.dumps(deal)}
+UPLOADED DOCUMENTS: {json.dumps(doc_context(deal_id)) or "none uploaded"}
 UNDERWRITING: {json.dumps(arts.get("underwriting", "not generated yet"))}
 MEMO: {json.dumps(memo_ctx)}
 HISTORY: {json.dumps([{"role": m.role, "text": m.text} for m in reversed(history)])}
@@ -312,6 +341,31 @@ MAX_PDF_BYTES = 20 * 1024 * 1024
 MAX_TEXT_CHARS = 60_000
 MAX_OCR_BYTES = 14 * 1024 * 1024  # inline AI requests cap at ~20 MB after base64 encoding
 IMAGE_TYPES = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}
+IDENTITY_KEYS = ("borrower", "sponsor", "property", "propertyType", "city", "purpose")
+
+
+def amortization_months(fields) -> int | None:
+    """Deterministic guard: read the amortization period from extracted fields so a loan *term* is never used for debt service."""
+    for f in fields or []:
+        name = str(f.get("field", "")).lower()
+        if "amort" not in name:
+            continue
+        txt = str(f.get("value", "")).lower().replace(",", "")
+        mo = re.search(r"(\d+)\s*(?:months?|mos?\b)", txt)
+        yr = re.search(r"(\d+(?:\.\d+)?)\s*(?:years?|yrs?\b)", txt)
+        num = re.search(r"\d+(?:\.\d+)?", txt)
+        if mo:
+            months = float(mo.group(1))
+        elif yr:
+            months = float(yr.group(1)) * 12
+        elif num:
+            n = float(num.group())
+            months = n if "month" in name else n * 12 if ("year" in name or n <= 40) else n
+        else:
+            continue
+        if 60 <= months <= 600:
+            return int(round(months))
+    return None
 
 
 def doc_out(d: UploadedDocument) -> dict:
@@ -334,6 +388,7 @@ def delete_document(deal_id: str, doc_id: int):
         if not d or d.deal_id != deal_id:
             raise HTTPException(404, detail="Document not found")
         s.delete(d)
+        s.execute(delete(DealArtifact).where(DealArtifact.deal_id == deal_id))  # analyses depended on this document
         s.commit()
     return {"ok": True}
 
@@ -374,8 +429,13 @@ Return JSON:
 "summary":"2-3 sentence summary",
 {'"ocrText":"full transcribed text of the document, pages separated by [Page N] markers","pageCount":n,' if needs_ocr else ''}
 "fields":[{{"field":"name","value":"formatted value","page":n,"confidence":0-100}}] (all material financial/legal facts found),
-"financials":{{"noi":number or null,"loanAmount":number or null,"propertyValue":number or null,"rate":decimal or null,"termMonths":number or null}} (only if explicitly stated in the document),
+"financials":{{"noi":annual NOI or null,"loanAmount":requested loan amount or null,"propertyValue":appraised/market value or null,"rate":annual interest rate as a DECIMAL or null,
+"termMonths":AMORTIZATION period in MONTHS (e.g. "30-year amortization" = 360). This is NOT the loan term/maturity (e.g. "10-year term" is NOT termMonths). null if no amortization is stated,
+"existingAnnualDebt":annual debt service on OTHER loans that remain outstanding after closing (0 if the document says existing debt is repaid or none; null if not stated)}} (only values explicitly stated in the document),
+"identity":{{"borrower":"borrowing entity","sponsor":"sponsor / key principal","property":"property name","propertyType":"Multifamily|Retail|Office|Industrial|Hospitality|Mixed-Use","city":"City, ST","purpose":"Acquisition|Refinance|Construction|Bridge"}} (null for anything not stated),
 "discrepancies":[{{"field":"...","documentValue":"...","dealValue":"...","note":"..."}}] (compare with DEAL CONTEXT),
+"internalConflicts":[{{"field":"...","valueA":"...","sourceA":"section, page N","valueB":"...","sourceB":"section, page N","note":"..."}}] (the SAME fact stated with DIFFERENT values in different parts of THIS document, e.g. occupancy 96% on one page vs 95% on another; [] if none),
+"outstandingItems":["documents or items the document lists as outstanding, pending or ordered"],
 "riskFlags":["..."]}}"""
     attachments = [("application/pdf" if is_pdf else image_mime, raw)] if needs_ocr else None
     data, model = await generate_json(prompt, f"document{'-ocr' if needs_ocr else ''}:{deal_id}", 0.1, attachments)
@@ -388,23 +448,32 @@ Return JSON:
         if len(text.strip()) < 20 and not data.get("fields"):
             raise HTTPException(422, detail="AI OCR could not read any text from this scan. Try a clearer or higher-resolution copy.")
 
-    fin = {k: v for k, v in (data.get("financials") or {}).items() if isinstance(v, (int, float)) and v > 0}
-    updated = {}
+    fin = {k: v for k, v in (data.get("financials") or {}).items()
+           if isinstance(v, (int, float)) and not isinstance(v, bool) and (v > 0 or (k == "existingAnnualDebt" and v == 0))}
+    amort = amortization_months(data.get("fields"))
+    if amort:
+        fin["termMonths"] = amort
+    ident = {k: v.strip() for k, v in (data.get("identity") or {}).items() if k in IDENTITY_KEYS and isinstance(v, str) and v.strip()}
+    is_application = (data.get("detectedType") or doc_type) == "Loan Application"
+    updated, warnings = {}, []
     with SessionLocal() as s:
         row = s.get(Deal, deal_id)
-        if fin:
-            new = normalize_deal({**row.data, **fin})
-            updated = {k: new[k] for k in fin if new.get(k) != row.data.get(k)}
+        if not is_application and ident.get("property") and ident["property"].lower() not in str(row.data.get("property", "")).lower():
+            warnings.append(f"Document is for '{ident['property']}' but this deal is '{row.data.get('property')}'. Check it was uploaded to the right deal.")
+        applied = {**(ident if is_application else {}), **fin}
+        if applied:
+            new = normalize_deal({**row.data, **applied})
+            updated = {k: new[k] for k in applied if new.get(k) != row.data.get(k)}
             if updated:
                 row.data = new
                 row.metrics = underwrite(new, POLICY)
-                s.execute(delete(DealArtifact).where(DealArtifact.deal_id == deal_id))  # stale analyses
+        s.execute(delete(DealArtifact).where(DealArtifact.deal_id == deal_id))  # analyses now depend on this document
         doc = UploadedDocument(deal_id=deal_id, filename=file.filename or "document.pdf", doc_type=data.get("detectedType") or doc_type,
                                file_size_bytes=len(raw), page_count=len(pages), extracted_text=text,
-                               extracted_data={**data, "appliedUpdates": updated}, model=model)
+                               extracted_data={**data, "appliedUpdates": updated, "warnings": warnings}, model=model)
         s.add(doc)
         s.commit()
-        return {"document": doc_out(doc), "updatedFields": updated, "deal": deal_out(row)}
+        return {"document": doc_out(doc), "updatedFields": updated, "warnings": warnings, "deal": deal_out(row)}
 
 
 @app.get("/api/ai-log")

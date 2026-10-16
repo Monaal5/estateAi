@@ -82,7 +82,7 @@ export const Dashboard: React.FC = () => {
 
         <main className="flex-1 p-6 max-w-[1500px]">
           {page === 'inbox' && <DealInbox q={deals} onOpen={open} />}
-          {page === 'underwriting' && <Underwriting dealId={dealId} />}
+          {page === 'underwriting' && <Underwriting dealId={dealId} onDealsChanged={deals.reload} />}
           {page === 'memo' && <CreditMemo dealId={dealId} />}
           {page === 'audit' && <ExtractionAudit />}
           {page === 'syndication' && <Syndication />}
