@@ -1,12 +1,12 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, create_engine
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, LargeBinary, String, Text, UniqueConstraint, create_engine, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from .config import DATABASE_URL
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 5})
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 10})
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 JsonType = JSON().with_variant(JSONB(), "postgresql")
 
@@ -86,7 +86,15 @@ class UploadedDocument(Base):
     extracted_data: Mapped[dict] = mapped_column(JsonType, default=dict)
     model: Mapped[str | None] = mapped_column(String(64), nullable=True)
     uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    # Original file bytes, so the lender can view/download exactly what the client sent. Deferred: only loaded on demand.
+    file_data: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True, deferred=True)
+    content_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
 def init_db():
     Base.metadata.create_all(engine)
+    # create_all never alters existing tables: add columns introduced after a database was first created.
+    if engine.dialect.name == "postgresql":
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE uploaded_documents ADD COLUMN IF NOT EXISTS file_data BYTEA"))
+            conn.execute(text("ALTER TABLE uploaded_documents ADD COLUMN IF NOT EXISTS content_type VARCHAR(100)"))

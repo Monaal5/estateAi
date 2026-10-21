@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bot, FileText, Send, Trash2, UploadCloud } from 'lucide-react';
+import { Bot, Download, Eye, FileText, Send, Trash2, UploadCloud } from 'lucide-react';
 import { api, fullMoney, money, useApi } from '../api';
 import { AiMeta, Badge, Card, ErrorPanel, Loading, PageHeader, Stat, Table } from '../ui';
 
@@ -79,6 +79,12 @@ const DocumentUpload: React.FC<{ dealId: string; onDealUpdated: () => void }> = 
                 <p className="text-sm font-semibold text-[#0b1f3a] truncate">{d.filename} {d.extracted?.ocr && <Badge tone="violet">AI OCR</Badge>}</p>
                 <p className="text-xs text-slate-500">{d.docType} · {d.pageCount} pp · {(d.sizeBytes / 1024).toFixed(0)} KB</p>
               </button>
+              {d.hasFile && (
+                <>
+                  <a id={`doc-view-${d.id}`} href={`/api/deals/${dealId}/documents/${d.id}/file`} target="_blank" rel="noopener noreferrer" title="View original" className="text-slate-400 hover:text-blue-600"><Eye className="w-4 h-4" /></a>
+                  <a id={`doc-download-${d.id}`} href={`/api/deals/${dealId}/documents/${d.id}/file?download=1`} title="Download original" className="text-slate-400 hover:text-blue-600"><Download className="w-4 h-4" /></a>
+                </>
+              )}
               <button onClick={() => remove(d.id)} title="Delete" className="text-slate-400 hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>
             </div>
             {open === d.id && (

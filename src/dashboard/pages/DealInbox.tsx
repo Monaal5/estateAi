@@ -1,14 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Building2, Plus, Search } from 'lucide-react';
 import { money, ApiError } from '../api';
 import { AiMeta, Badge, Card, ErrorPanel, Loading, PageHeader, Stat, Table } from '../ui';
 
 interface Props {
   q: { data: any; error: ApiError | null; loading: boolean; refresh: () => void };
   onOpen: (id: string) => void;
+  onNewClient: () => void;
 }
 
-export const DealInbox: React.FC<Props> = ({ q, onOpen }) => {
+export const DealInbox: React.FC<Props> = ({ q, onOpen, onNewClient }) => {
   const [search, setSearch] = useState('');
   const [stage, setStage] = useState('All');
   const deals: any[] = q.data?.deals || [];
@@ -28,6 +29,16 @@ export const DealInbox: React.FC<Props> = ({ q, onOpen }) => {
         desc="AI-generated pipeline of inbound loan applications, document extraction status and covenant exceptions."
         right={<AiMeta model={q.data?.model} at={q.data?.generatedAt} onRefresh={q.refresh} loading={q.loading} />}
       />
+      <div className="rounded-2xl bg-gradient-to-r from-[#0b1f3a] via-[#16325c] to-blue-700 text-white p-5 flex flex-wrap items-center gap-4 shadow-sm">
+        <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center"><Building2 className="w-6 h-6 text-blue-200" /></div>
+        <div className="flex-1 min-w-[240px]">
+          <p className="font-extrabold">Onboard a new client</p>
+          <p className="text-sm text-blue-100">Upload a company's loan package (PDF or scan). AI creates a saved deal under their name, underwrites it against Apex policy, and stores the original document.</p>
+        </div>
+        <button id="inbox-new-client-btn" onClick={onNewClient} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white text-[#0b1f3a] font-bold text-sm hover:bg-blue-50 transition-colors">
+          <Plus className="w-4 h-4" /> New client from document
+        </button>
+      </div>
       {q.error && <ErrorPanel error={q.error} onRetry={q.refresh} />}
       {q.loading && !q.data && <Loading label="AI is generating the loan pipeline…" />}
       {s && (
@@ -59,7 +70,7 @@ export const DealInbox: React.FC<Props> = ({ q, onOpen }) => {
                     <div className="flex items-start gap-2">
                       <span className={`mt-1.5 w-2 h-2 rounded-full ${d.priority === 'High' ? 'bg-orange-500' : d.priority === 'Medium' ? 'bg-blue-500' : 'bg-slate-300'}`} />
                       <div>
-                        <p className="font-bold text-[#0b1f3a]">{d.borrower} <span className="text-slate-400 font-normal">· {d.id}</span></p>
+                        <p className="font-bold text-[#0b1f3a]">{d.borrower} <span className="text-slate-400 font-normal">· {d.id}</span> {d.origin === 'client' && <Badge tone="violet">Client</Badge>}</p>
                         <p className="text-xs text-slate-500">{d.property} · {d.propertyType} · {d.city}</p>
                         <p className="text-xs text-slate-400 italic">{d.lastActivity}</p>
                       </div>

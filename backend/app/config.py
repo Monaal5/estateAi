@@ -7,7 +7,11 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODELS = [m.strip() for m in os.getenv("GEMINI_MODELS", "gemini-2.5-flash").split(",") if m.strip()]
 
-raw_db_url = os.getenv("DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/estate_ai")
+raw_db_url = os.getenv("DATABASE_URL", "").strip() or "postgresql+psycopg://postgres:postgres@localhost:5432/estate_ai"
+# Neon's "copy" button can include a psql prefix or quotes: psql 'postgresql://...?sslmode=require'
+if raw_db_url.startswith("psql "):
+    raw_db_url = raw_db_url[5:].strip()
+raw_db_url = raw_db_url.strip("'\"")
 if raw_db_url.startswith("postgres://"):
     DATABASE_URL = raw_db_url.replace("postgres://", "postgresql+psycopg://", 1)
 elif raw_db_url.startswith("postgresql://") and not raw_db_url.startswith("postgresql+psycopg://"):

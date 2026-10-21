@@ -6,9 +6,10 @@ import re
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from pypdf import PdfReader
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from sqlalchemy import delete, select
+from urllib.parse import quote
 
 from .config import DATABASE_URL, POLICY
 from .db import AiCallLog, ChatMessage, Deal, DealArtifact, PortfolioArtifact, SessionLocal, UploadedDocument, init_db
@@ -47,7 +48,7 @@ async def _db_err(_req: Request, e: Exception):
     return JSONResponse(
         status_code=503,
         content={
-            "error": "Database connection failed. Please add PostgreSQL database on Render and set DATABASE_URL in Web Service Environment variables.",
+            "error": "Database connection failed. Set DATABASE_URL (your Neon PostgreSQL connection string) in the Render service's Environment variables, then redeploy.",
             "reason": "DATABASE_UNAVAILABLE",
         },
     )
@@ -99,7 +100,9 @@ async def ensure_deals(force: bool = False) -> list[Deal]:
     async def gen():
         data, model = await generate_json(DEALS_PROMPT, "deals")
         with SessionLocal() as s:
-            s.execute(delete(Deal))  # cascades to artifacts + chat
+            # Keep deals onboarded from real client documents; only the AI demo pipeline is replaced.
+            client_ids = [d.id for d in s.scalars(select(Deal)).all() if (d.data or {}).get("origin") == "client"]
+            s.execute(delete(Deal).where(Deal.id.notin_(client_ids)))  # cascades to artifacts + chat + documents
             s.execute(delete(PortfolioArtifact))
             for i, raw in enumerate(data["deals"]):
                 d = normalize_deal(raw)
@@ -370,7 +373,8 @@ def amortization_months(fields) -> int | None:
 
 def doc_out(d: UploadedDocument) -> dict:
     return {"id": d.id, "filename": d.filename, "docType": d.doc_type, "sizeBytes": d.file_size_bytes,
-            "pageCount": d.page_count, "extracted": d.extracted_data, "uploadedAt": iso(d.uploaded_at)}
+            "pageCount": d.page_count, "extracted": d.extracted_data, "uploadedAt": iso(d.uploaded_at),
+            "hasFile": bool(d.content_type)}
 
 
 @app.get("/api/deals/{deal_id}/documents")
@@ -393,9 +397,28 @@ def delete_document(deal_id: str, doc_id: int):
     return {"ok": True}
 
 
-@app.post("/api/deals/{deal_id}/documents/upload")
-async def upload_document(deal_id: str, file: UploadFile = File(...), doc_type: str = Form("Other")):
-    d = get_deal(deal_id)
+@app.get("/api/deals/{deal_id}/documents/{doc_id}/file")
+def document_file(deal_id: str, doc_id: int, download: int = 0):
+    """Serve the original uploaded file from the database (inline view, or download with ?download=1)."""
+    with SessionLocal() as s:
+        d = s.get(UploadedDocument, doc_id)
+        if not d or d.deal_id != deal_id:
+            raise HTTPException(404, detail="Document not found")
+        if not d.file_data:
+            raise HTTPException(404, detail="The original file was not stored for this document (uploaded before file storage was enabled).")
+        content, mime, name = d.file_data, d.content_type or "application/octet-stream", d.filename
+    disp = "attachment" if download else "inline"
+    return Response(content, media_type=mime, headers={"Content-Disposition": f"{disp}; filename*=UTF-8''{quote(name)}"})
+
+
+class Extraction:
+    """Result of reading one uploaded file with pypdf / AI OCR + AI extraction."""
+
+    def __init__(self, **kw):
+        self.__dict__.update(kw)
+
+
+async def read_and_extract(file: UploadFile, doc_type: str, deal: dict | None, purpose: str) -> Extraction:
     name = (file.filename or "").lower()
     ext = name.rsplit(".", 1)[-1] if "." in name else ""
     is_pdf = ext == "pdf" or file.content_type == "application/pdf"
@@ -417,11 +440,11 @@ async def upload_document(deal_id: str, file: UploadFile = File(...), doc_type: 
     if needs_ocr and len(raw) > MAX_OCR_BYTES:
         raise HTTPException(413, detail="Scanned documents must be under 14 MB for AI OCR.")
 
-    deal = deal_out(d)
+    context = json.dumps(deal) if deal else "NONE — this document opens a NEW client deal; leave discrepancies empty."
     source = ("The document is ATTACHED as a scanned file. Perform OCR on every page, then extract."
               if needs_ocr else f"DOCUMENT TEXT:\n{text[:MAX_TEXT_CHARS]}")
     prompt = f"""You are a CRE loan document extraction engine. Extract facts ONLY from the document. Never invent values.
-DEAL CONTEXT: {json.dumps(deal)}
+DEAL CONTEXT: {context}
 DOCUMENT TYPE (user-declared): {doc_type}
 {source}
 Return JSON:
@@ -438,7 +461,7 @@ Return JSON:
 "outstandingItems":["documents or items the document lists as outstanding, pending or ordered"],
 "riskFlags":["..."]}}"""
     attachments = [("application/pdf" if is_pdf else image_mime, raw)] if needs_ocr else None
-    data, model = await generate_json(prompt, f"document{'-ocr' if needs_ocr else ''}:{deal_id}", 0.1, attachments)
+    data, model = await generate_json(prompt, f"document{'-ocr' if needs_ocr else ''}:{purpose}", 0.1, attachments)
     if needs_ocr:
         text = str(data.pop("ocrText", "") or "")
         if not pages:
@@ -454,13 +477,30 @@ Return JSON:
     if amort:
         fin["termMonths"] = amort
     ident = {k: v.strip() for k, v in (data.get("identity") or {}).items() if k in IDENTITY_KEYS and isinstance(v, str) and v.strip()}
-    is_application = (data.get("detectedType") or doc_type) == "Loan Application"
+    is_application = "Loan Application" in (doc_type, data.get("detectedType"))
+    mime = "application/pdf" if is_pdf else image_mime
+    return Extraction(raw=raw, mime=mime, pages=pages, text=text, data=data, model=model, fin=fin, ident=ident, is_application=is_application)
+
+
+def store_document(s, deal_id: str, file: UploadFile, doc_type: str, x: Extraction, updated: dict, warnings: list) -> UploadedDocument:
+    doc = UploadedDocument(deal_id=deal_id, filename=file.filename or "document.pdf", doc_type=x.data.get("detectedType") or doc_type,
+                           file_size_bytes=len(x.raw), page_count=len(x.pages), extracted_text=x.text,
+                           extracted_data={**x.data, "appliedUpdates": updated, "warnings": warnings}, model=x.model,
+                           file_data=x.raw, content_type=x.mime)
+    s.add(doc)
+    return doc
+
+
+@app.post("/api/deals/{deal_id}/documents/upload")
+async def upload_document(deal_id: str, file: UploadFile = File(...), doc_type: str = Form("Other")):
+    """Add a document to an existing deal; financials (and identity, for loan applications) update the deal."""
+    x = await read_and_extract(file, doc_type, deal_out(get_deal(deal_id)), deal_id)
     updated, warnings = {}, []
     with SessionLocal() as s:
         row = s.get(Deal, deal_id)
-        if not is_application and ident.get("property") and ident["property"].lower() not in str(row.data.get("property", "")).lower():
-            warnings.append(f"Document is for '{ident['property']}' but this deal is '{row.data.get('property')}'. Check it was uploaded to the right deal.")
-        applied = {**(ident if is_application else {}), **fin}
+        if not x.is_application and x.ident.get("property") and x.ident["property"].lower() not in str(row.data.get("property", "")).lower():
+            warnings.append(f"Document is for '{x.ident['property']}' but this deal is '{row.data.get('property')}'. Check it was uploaded to the right deal, or use 'New client from document'.")
+        applied = {**(x.ident if x.is_application else {}), **x.fin}
         if applied:
             new = normalize_deal({**row.data, **applied})
             updated = {k: new[k] for k in applied if new.get(k) != row.data.get(k)}
@@ -468,12 +508,40 @@ Return JSON:
                 row.data = new
                 row.metrics = underwrite(new, POLICY)
         s.execute(delete(DealArtifact).where(DealArtifact.deal_id == deal_id))  # analyses now depend on this document
-        doc = UploadedDocument(deal_id=deal_id, filename=file.filename or "document.pdf", doc_type=data.get("detectedType") or doc_type,
-                               file_size_bytes=len(raw), page_count=len(pages), extracted_text=text,
-                               extracted_data={**data, "appliedUpdates": updated, "warnings": warnings}, model=model)
-        s.add(doc)
+        doc = store_document(s, deal_id, file, doc_type, x, updated, warnings)
         s.commit()
         return {"document": doc_out(doc), "updatedFields": updated, "warnings": warnings, "deal": deal_out(row)}
+
+
+@app.post("/api/deals/from-document")
+async def create_deal_from_document(file: UploadFile = File(...), doc_type: str = Form("Loan Application")):
+    """Onboard a NEW client: read their loan package, create a saved deal from it, and attach the document."""
+    x = await read_and_extract(file, doc_type, None, "new-client")
+    if not x.ident.get("borrower") and not x.ident.get("property"):
+        raise HTTPException(422, detail="Could not find a borrower or property name in this document. Upload the client's loan application or full loan package.")
+    missing = [label for key, label in (("loanAmount", "loan amount"), ("noi", "NOI"), ("propertyValue", "property value"), ("rate", "interest rate"), ("termMonths", "amortization")) if key not in x.fin]
+    outstanding = x.data.get("outstandingItems") or []
+    data = normalize_deal({
+        "borrower": x.ident.get("borrower") or x.ident.get("property"), "sponsor": x.ident.get("sponsor", "—"),
+        "property": x.ident.get("property") or x.ident.get("borrower"), "propertyType": x.ident.get("propertyType", "Other"),
+        "city": x.ident.get("city", "—"), "purpose": x.ident.get("purpose", "Acquisition"), "existingAnnualDebt": 0, **x.fin,
+        "stage": "Intake", "complianceState": "Docs Outstanding" if outstanding or missing else "KYC Pending",
+        "assignee": "Unassigned", "daysInStage": 0, "blockers": len(outstanding) + len(missing),
+        "lastActivity": f"Client package uploaded: {file.filename}", "origin": "client",
+    })
+    metrics = underwrite(data, POLICY)
+    data["priority"] = "High" if not (metrics["passesDscr"] and metrics["passesLtv"]) or missing else "Medium"
+    warnings = [f"Not stated in the document: {', '.join(missing)}. Defaults were used — upload the missing documents to complete the deal."] if missing else []
+    with SessionLocal() as s:
+        rows = s.scalars(select(Deal)).all()
+        nums = [int(m.group(1)) for d in rows if (m := re.fullmatch(r"CL-(\d+)", d.id))]
+        deal_id = f"CL-{(max(nums) + 1) if nums else 1001}"
+        row = Deal(id=deal_id, position=min((d.position for d in rows), default=0) - 1, data=data, metrics=metrics, model=x.model)
+        s.add(row)
+        s.flush()
+        doc = store_document(s, deal_id, file, doc_type, x, {k: data[k] for k in (*x.ident, *x.fin) if k in data}, warnings)
+        s.commit()
+        return {"deal": deal_out(row), "document": doc_out(doc), "warnings": warnings}
 
 
 @app.get("/api/ai-log")

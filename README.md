@@ -15,6 +15,8 @@ All money ratios (DSCR, LTV, debt yield) are calculated with fixed formulas, so 
 | 1 | **Deal Pipeline & Inbox** | Lists every loan request with its stage, priority, blockers, compliance state and DSCR/LTV. Shows portfolio totals (volume, average DSCR, deals needing action). |
 | 2 | **Underwriting Workspace** | The working view for one deal: key metrics, AI-extracted facts with source/page/confidence, conflicting values between documents, a conditions tracker and risk flags. |
 | 3 | **Document Upload (PDF / Scans)** | Drag-and-drop PDFs, scanned PDFs or JPG/PNG/WEBP photos. The AI extracts fields, compares them with the deal and lists any mismatches. If the document states NOI, loan amount, value, rate or term, the deal is updated and **re-underwritten automatically**. |
+| 3a | **New client from document** | Top-bar / Inbox button. Upload a company's loan package and the AI creates a **new saved deal** (`CL-1001`, `CL-1002`, …) under that company's name, underwritten against Apex policy. Client deals are marked ★ / *Client*, listed first, and are never removed when the demo pipeline is regenerated. |
+| 3b | **Original files stored in the database** | Every uploaded file is saved in PostgreSQL, with **View** and **Download** buttons on the document list. |
 | 4 | **AI OCR** | Scanned PDFs and images with no text layer are sent straight to the AI model, which transcribes them. The full transcription is stored in the database. |
 | 5 | **Underwriting Copilot** | A chat box tied to each deal. The AI answers only from that deal's data, cites its sources and saves the conversation. |
 | 6 | **Credit Memorandum** | AI-written committee memo: recommendation, executive summary, sponsor/market/collateral analysis, strengths, weaknesses, mitigants, stress tests, lender matches and package completeness. |
@@ -85,10 +87,10 @@ portfolio/
 | `deal_artifacts` | Per-deal AI output (`underwriting`, `memo`) |
 | `portfolio_artifacts` | Portfolio-wide AI output (`audit`, `syndication`, `covenants`) |
 | `chat_messages` | Copilot conversation history per deal |
-| `uploaded_documents` | Uploaded files: type, pages, size, extracted/OCR text, AI extraction JSON |
+| `uploaded_documents` | Uploaded files: original file bytes (`file_data`, `content_type`), type, pages, size, extracted/OCR text, AI extraction JSON |
 | `ai_call_log` | Audit log of every AI call |
 
-Tables are created automatically when the backend starts.
+Tables are created automatically when the backend starts, and new columns are added to existing databases automatically.
 
 ---
 
@@ -135,13 +137,24 @@ This starts three processes together:
 
 Open **http://localhost:3000**.
 
+### 5. Deploy (Render + Neon PostgreSQL)
+The hosted app uses a free **Neon** PostgreSQL database (it does not expire like Render's free database).
+
+1. Sign in at **https://neon.tech** → *New Project* (Postgres 17, region closest to your Render region).
+2. On the project dashboard click **Connect**, and copy the connection string. It looks like
+   `postgresql://USER:PASSWORD@ep-xxxx.REGION.aws.neon.tech/neondb?sslmode=require`.
+3. In Render → service **estate-ai** → *Environment*, set `DATABASE_URL` to that string. Also check that `GEMINI_API_KEY` is set.
+4. Save, then redeploy. Open `https://<your-app>.onrender.com/api/health`. It should show `"database": "ok"`.
+
+Tables are created in Neon on first start. Never commit the connection string.
+
 ---
 
 ## 🧭 How to Use
 
-1. **Deal Pipeline:** browse the loan requests and click one.
+1. **Deal Pipeline:** browse the loan requests and click one, or click **New client from document** to onboard a new company from its loan package.
 2. **Underwriting Workspace:** review the metrics, extracted facts, conflicts and conditions.
-3. **Upload documents:** drop a rent roll, T-12, appraisal or scan. The AI reads it and updates the deal if the numbers differ.
+3. **Upload documents:** drop a rent roll, T-12, appraisal or scan. The AI reads it and updates the deal if the numbers differ. Use the eye/download icons to open the stored original.
 4. **Ask the Copilot:** for example, *"What is the biggest credit risk?"*
 5. **Credit Memorandum:** get the approve or decline recommendation along with stress tests.
 6. **Portfolio pages:** monitor the extraction audit, syndication and covenants.
@@ -159,6 +172,8 @@ Open **http://localhost:3000**.
 | GET / POST | `/api/deals/{id}/chat` | Copilot history / ask a question `{ "question": "..." }` |
 | GET | `/api/deals/{id}/documents` | List uploaded documents |
 | POST | `/api/deals/{id}/documents/upload` | Multipart: `file` (PDF/JPG/PNG/WEBP), `doc_type` |
+| POST | `/api/deals/from-document` | Multipart: `file`, `doc_type`. Creates a new client deal from the document |
+| GET | `/api/deals/{id}/documents/{docId}/file?download=1` | Original stored file (inline, or as a download) |
 | DELETE | `/api/deals/{id}/documents/{docId}` | Delete a document |
 | GET | `/api/extraction-audit` | Extraction audit |
 | GET | `/api/syndication` | Term sheets & participations |

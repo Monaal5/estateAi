@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Inbox, Briefcase, FileText, ScanSearch, Landmark, ShieldCheck, Activity } from 'lucide-react';
+import { Inbox, Briefcase, FileText, ScanSearch, Landmark, ShieldCheck, Activity, Plus, CheckCircle2, X } from 'lucide-react';
 import { api, money, useApi } from './api';
 import { DealInbox } from './pages/DealInbox';
 import { Underwriting } from './pages/Underwriting';
 import { CreditMemo } from './pages/CreditMemo';
 import { ExtractionAudit, Syndication, Covenants } from './pages/Portfolio';
+import { NewClientModal } from './NewClient';
 
 const NAV = [
   { id: 'inbox', label: 'Deal Pipeline & Inbox', icon: Inbox },
@@ -29,14 +30,24 @@ const AiStatus: React.FC = () => {
 
 export const Dashboard: React.FC = () => {
   const [page, setPage] = useState<Page>('inbox');
-  const [dealId, setDealId] = useState<string | null>(null);
+  const [dealId, setDealIdState] = useState<string | null>(() => localStorage.getItem('activeDeal'));
+  const [showNew, setShowNew] = useState(false);
+  const [flash, setFlash] = useState<string | null>(null);
   const deals = useApi('/deals');
   const list: any[] = deals.data?.deals || [];
   const active = list.find((d) => d.id === dealId);
 
-  useEffect(() => { if (!dealId && list.length) setDealId(list[0].id); }, [list, dealId]);
+  const setDealId = (id: string) => { setDealIdState(id); localStorage.setItem('activeDeal', id); };
+  // Pick the first deal when nothing (or a deal that no longer exists) is selected.
+  useEffect(() => { if (list.length && !list.some((d) => d.id === dealId)) setDealId(list[0].id); }, [list, dealId]);
 
   const open = (id: string) => { setDealId(id); setPage('underwriting'); };
+  const onClientCreated = async (deal: any, warnings: string[]) => {
+    setShowNew(false);
+    await deals.reload();
+    open(deal.id);
+    setFlash(`New client saved: ${deal.borrower} — ${deal.property} (${deal.id}). The document is stored with the deal.${warnings.length ? ` ⚠ ${warnings.join(' ')}` : ''}`);
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans text-slate-800 flex flex-col">
@@ -49,9 +60,12 @@ export const Dashboard: React.FC = () => {
           <span className="text-blue-200 text-xs">Active Deal</span>
           <select id="active-deal" value={dealId || ''} onChange={(e) => setDealId(e.target.value)} className="bg-[#16325c] border border-blue-900 rounded-lg px-2 py-1 text-sm max-w-xs" disabled={!list.length}>
             {!list.length && <option>No deals loaded</option>}
-            {list.map((d) => <option key={d.id} value={d.id}>{d.property} ({money(d.loanAmount)})</option>)}
+            {list.map((d) => <option key={d.id} value={d.id}>{d.origin === 'client' ? '★ ' : ''}{d.borrower} — {d.property} ({money(d.loanAmount)})</option>)}
           </select>
         </div>
+        <button id="new-client-btn" onClick={() => setShowNew(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-semibold shadow transition-colors">
+          <Plus className="w-4 h-4" /> New client from document
+        </button>
         <div className="ml-auto"><AiStatus /></div>
       </header>
 
@@ -81,7 +95,13 @@ export const Dashboard: React.FC = () => {
         </aside>
 
         <main className="flex-1 p-6 max-w-[1500px]">
-          {page === 'inbox' && <DealInbox q={deals} onOpen={open} />}
+          {flash && (
+            <div id="flash-message" className="mb-4 flex items-start gap-2 text-sm text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" /><p className="flex-1">{flash}</p>
+              <button onClick={() => setFlash(null)} aria-label="Dismiss" className="text-emerald-700 hover:text-emerald-900"><X className="w-4 h-4" /></button>
+            </div>
+          )}
+          {page === 'inbox' && <DealInbox q={deals} onOpen={open} onNewClient={() => setShowNew(true)} />}
           {page === 'underwriting' && <Underwriting dealId={dealId} onDealsChanged={deals.reload} />}
           {page === 'memo' && <CreditMemo dealId={dealId} />}
           {page === 'audit' && <ExtractionAudit />}
@@ -89,6 +109,7 @@ export const Dashboard: React.FC = () => {
           {page === 'covenants' && <Covenants />}
         </main>
       </div>
+      {showNew && <NewClientModal onClose={() => setShowNew(false)} onCreated={onClientCreated} />}
     </div>
   );
 };
